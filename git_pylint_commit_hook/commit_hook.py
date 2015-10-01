@@ -81,6 +81,24 @@ def _parse_score(pylint_output):
     return 0.0
 
 
+def _ignore_file(ignore_list, cur_path):
+    """ Test potential file path against pylint ignore parameter
+
+    Returns True if the file name or any directory in the path
+    is found in ignore_list (exact match only).
+    """
+    if len(ignore_list) == 0:
+        return False
+
+    while len(cur_path) > 0:
+        cur_path, tail = os.path.split(cur_path)
+        if tail == '':
+            break
+        if tail in ignore_list:
+            return True
+    return False
+
+
 def check_repo(
         limit, pylint='pylint', pylintrc='.pylintrc', pylint_params=None,
         suppress_report=False):
@@ -127,6 +145,16 @@ def check_repo(
         if conf.has_option('pre-commit-hook', 'limit'):
             limit = float(conf.get('pre-commit-hook', 'limit'))
 
+        if conf.has_option('MASTER', 'ignore'):
+            ignore_list = conf.get('MASTER', 'ignore').split(',')
+            # TODO: Parse pylint_params, too?
+            # TODO: If no rc file here, can we find this from
+            #       pylint args and/or default config files?
+            #       I think the smart way to do this would be
+            #       to build the pylint command as below, run with
+            #       --generate-rcfile (into a StringIO pipe) and parse
+            #       the resulting config file.
+
     # Pylint Python files
     i = 1
     for python_file, score in python_files:
@@ -140,6 +168,14 @@ def check_repo(
                 # Bump parsed files
                 i += 1
                 continue
+
+        if _ignore_file(ignore_list, python_file):
+            print(
+                'Skipping pylint on {} (ignored in pylint configuration)..'
+                '\tSKIPPED'.format(python_file))
+            # Bump parsed files
+            i += 1
+            continue
 
         # Start pylinting
         sys.stdout.write("Running pylint on {} (file {}/{})..\t".format(
