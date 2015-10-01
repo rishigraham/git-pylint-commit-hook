@@ -147,13 +147,6 @@ def check_repo(
 
         if conf.has_option('MASTER', 'ignore'):
             ignore_list = conf.get('MASTER', 'ignore').split(',')
-            # TODO: Parse pylint_params, too?
-            # TODO: If no rc file here, can we find this from
-            #       pylint args and/or default config files?
-            #       I think the smart way to do this would be
-            #       to build the pylint command as below, run with
-            #       --generate-rcfile (into a StringIO pipe) and parse
-            #       the resulting config file.
 
     # Pylint Python files
     i = 1
